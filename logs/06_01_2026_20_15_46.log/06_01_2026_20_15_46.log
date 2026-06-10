@@ -1,0 +1,10 @@
+[ 2026-06-01 20:15:48,596 ] 16 root - INFO - Starting training pipeline...
+[ 2026-06-01 20:15:48,596 ] 19 root - INFO - Step 1: Data Ingestion
+[ 2026-06-01 20:15:48,596 ] 61 root - INFO - Initiating data ingestion...
+[ 2026-06-01 20:15:48,596 ] 31 root - INFO - Starting data download...
+[ 2026-06-01 20:15:59,223 ] 46 root - INFO - Data downloaded successfully and saved to artifacts/raw.csv
+[ 2026-06-01 20:15:59,647 ] 74 root - INFO - Data ingestion completed successfully. Train data saved to artifacts/train.csv and Test data saved to artifacts/test.csv
+[ 2026-06-01 20:15:59,647 ] 24 root - INFO - Step 2 & 3: Feature Engineering and Transformation
+[ 2026-06-01 20:16:00,375 ] 32 root - INFO - Step 4: Model Training
+[ 2026-06-01 20:16:03,248 ] 49 root - INFO - Trained model saved at path: artifacts/model.pkl
+[ 2026-06-01 20:16:03,372 ] 37 root - INFO - Training pipeline completed successfully. Best Model Accuracy: 0.5224

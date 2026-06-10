@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premier League Match Outcome Predictor</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0d0f1e 0%, #151a3a 100%);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --glass-glow-home: 0 0 25px rgba(99, 102, 241, 0.2);
+            --glass-glow-away: 0 0 25px rgba(236, 72, 153, 0.2);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --accent-home: #6366f1;
+            --accent-away: #ec4899;
+            --accent-draw: #10b981;
+            --font-family: 'Outfit', sans-serif;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Header Style */
+        header {
+            text-align: center;
+            margin-bottom: 1rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        header h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #818cf8, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+
+        /* Glassmorphic card base styling */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--glass-shadow);
+            padding: 2rem;
+            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Match Panel layout */
+        .match-setup-panel {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 2rem;
+            align-items: stretch;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @media (max-width: 768px) {
+            .match-setup-panel {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            .vs-divider {
+                height: 50px;
+                width: 100% !important;
+            }
+        }
+
+        .team-card {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            position: relative;
+        }
+
+        .team-card.home {
+            box-shadow: var(--glass-shadow), var(--glass-glow-home);
+            border-top: 3px solid var(--accent-home);
+        }
+
+        .team-card.away {
+            box-shadow: var(--glass-shadow), var(--glass-glow-away);
+            border-top: 3px solid var(--accent-away);
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .home .card-title { color: #a5b4fc; }
+        .away .card-title { color: #f9a8d4; }
+
+        /* Form elements */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        select, input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 1rem;
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            font-size: 1.05rem;
+            outline: none;
+            transition: border-color var(--transition-speed);
+            width: 100%;
+        }
+
+        select:focus, input:focus {
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        select option {
+            background-color: #151a3a;
+            color: var(--text-primary);
+        }
+
+        /* VS divider styling */
+        .vs-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            position: relative;
+        }
+
+        .vs-circle {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 2px solid var(--glass-border);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            z-index: 2;
+        }
+
+        /* Predict button */
+        .predict-action-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .btn-predict {
+            background: linear-gradient(90deg, #6366f1 0%, #ec4899 100%);
+            border: none;
+            border-radius: 30px;
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            font-size: 1.25rem;
+            font-weight: 700;
+            padding: 1rem 3.5rem;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+            transition: all var(--transition-speed);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .btn-predict:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(236, 72, 153, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn-predict:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-predict i {
+            font-size: 1.1rem;
+            transition: transform 0.5s ease;
+        }
+
+        .btn-predict:hover i {
+            transform: rotate(360deg);
+        }
+
+        /* Stats Comparison Panel */
+        .stats-panel {
+            display: none;
+            flex-direction: column;
+            gap: 1.5rem;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .stats-header {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            color: #818cf8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .stat-row {
+            display: grid;
+            grid-template-columns: 2.5fr 1fr 2.5fr;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: background var(--transition-speed);
+        }
+
+        .stat-row:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-name {
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-val-home {
+            text-align: left;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: #c7d2fe;
+        }
+
+        .stat-val-away {
+            text-align: right;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: #fbcfe8;
+        }
+
+        .stat-bar-container {
+            display: flex;
+            height: 6px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+            grid-column: 1 / span 3;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .stat-bar-home {
+            background: var(--accent-home);
+            height: 100%;
+            transition: width 0.8s ease-out;
+        }
+
+        .stat-bar-away {
+            background: var(--accent-away);
+            height: 100%;
+            transition: width 0.8s ease-out;
+        }
+
+        /* Results Panel */
+        .results-panel {
+            display: none;
+            flex-direction: column;
+            gap: 2rem;
+            animation: zoomIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-align: center;
+            border-top: 4px solid var(--accent-draw);
+        }
+
+        .winner-announcement {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .winner-title {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .winner-name {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #10b981;
+            text-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .winner-name.home-win {
+            color: #818cf8;
+            text-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .winner-name.away-win {
+            color: #f472b6;
+            text-shadow: 0 0 15px rgba(236, 72, 153, 0.3);
+        }
+
+        /* Probabilities Bar Chart */
+        .prob-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            text-align: left;
+        }
+
+        .prob-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .prob-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .prob-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .prob-value {
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        .prob-bar-bg {
+            height: 14px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 7px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.03);
+            position: relative;
+        }
+
+        .prob-bar-fill {
+            height: 100%;
+            border-radius: 7px;
+            width: 0%;
+            transition: width 1s cubic-bezier(0.1, 0.8, 0.1, 1);
+        }
+
+        .fill-home { background: linear-gradient(90deg, #4f46e5, #6366f1); }
+        .fill-draw { background: linear-gradient(90deg, #059669, #10b981); }
+        .fill-away { background: linear-gradient(90deg, #db2777, #ec4899); }
+
+        /* Loader Animation */
+        .loader-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 15, 30, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(99, 102, 241, 0.1);
+            border-top: 5px solid var(--accent-home);
+            border-bottom: 5px solid var(--accent-away);
+            border-radius: 50%;
+            animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+            filter: drop-shadow(0 0 10px rgba(99,102,241,0.5));
+        }
+
+        .loader-text {
+            font-size: 1.2rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            color: var(--text-primary);
+        }
+
+        /* Error Banner */
+        #error-banner {
+            display: none;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            color: #fca5a5;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+            align-items: center;
+            gap: 0.75rem;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        /* Keyframes Animations */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 2rem 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-align: center;
+            font-weight: 300;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <header>
+            <h1>Premier League Predictor</h1>
+            <p>Predict match outcomes using team ELO, rolling stats, and betting odds</p>
+        </header>
+
+        <!-- Error Message -->
+        <div id="error-banner">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="error-msg">An error occurred</span>
+        </div>
+
+        <!-- Match Setup Panel -->
+        <div class="match-setup-panel">
+            
+            <!-- Home Team Card -->
+            <div class="glass-card team-card home">
+                <div class="card-title">
+                    <i class="fa-solid fa-house-chimney"></i>
+                    <span>Home Team</span>
+                </div>
+                
+                <div class="form-group">
+                    <label for="home-team-select">Select Home Team</label>
+                    <select id="home-team-select" required>
+                        <option value="" disabled selected>Choose Home Team</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="home-odds">Home Win Odds (B365H)</label>
+                    <input type="number" id="home-odds" placeholder="e.g. 1.85" step="0.01" min="1.01" required>
+                </div>
+            </div>
+
+            <!-- VS Circle -->
+            <div class="vs-divider">
+                <div class="vs-circle">VS</div>
+            </div>
+
+            <!-- Away Team Card -->
+            <div class="glass-card team-card away">
+                <div class="card-title">
+                    <i class="fa-solid fa-plane-departure"></i>
+                    <span>Away Team</span>
+                </div>
+                
+                <div class="form-group">
+                    <label for="away-team-select">Select Away Team</label>
+                    <select id="away-team-select" required>
+                        <option value="" disabled selected>Choose Away Team</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="away-odds">Away Win Odds (B365A)</label>
+                    <input type="number" id="away-odds" placeholder="e.g. 4.20" step="0.01" min="1.01" required>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Middle Draw Odds Card -->
+        <div class="glass-card" style="margin-top: -1rem; padding: 1.5rem; text-align: center; max-width: 400px; align-self: center; width: 100%; animation: fadeInUp 0.9s ease-out;">
+            <div class="form-group" style="text-align: left;">
+                <label for="draw-odds" style="text-align: center; display: block; margin-bottom: 0.25rem;">Draw Odds (B365D)</label>
+                <input type="number" id="draw-odds" placeholder="e.g. 3.60" step="0.01" min="1.01" required style="text-align: center;">
+            </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="predict-action-container">
+            <button id="btn-predict-match" class="btn-predict">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>Predict Outcome</span>
+            </button>
+        </div>
+
+        <!-- Prediction Results Panel -->
+        <div id="results-card" class="glass-card results-panel">
+            <div class="winner-announcement">
+                <div class="winner-title">Predicted Outcome</div>
+                <div id="predicted-result" class="winner-name">HOME WIN</div>
+            </div>
+
+            <div class="prob-chart">
+                <!-- Home Win Prob -->
+                <div class="prob-item">
+                    <div class="prob-meta">
+                        <span class="prob-label"><i class="fa-solid fa-circle" style="color: var(--accent-home); font-size: 0.75rem;"></i> Home Win Probability</span>
+                        <span id="prob-home-val" class="prob-value">0%</span>
+                    </div>
+                    <div class="prob-bar-bg">
+                        <div id="prob-home-bar" class="prob-bar-fill fill-home"></div>
+                    </div>
+                </div>
+
+                <!-- Draw Prob -->
+                <div class="prob-item">
+                    <div class="prob-meta">
+                        <span class="prob-label"><i class="fa-solid fa-circle" style="color: var(--accent-draw); font-size: 0.75rem;"></i> Draw Probability</span>
+                        <span id="prob-draw-val" class="prob-value">0%</span>
+                    </div>
+                    <div class="prob-bar-bg">
+                        <div id="prob-draw-bar" class="prob-bar-fill fill-draw"></div>
+                    </div>
+                </div>
+
+                <!-- Away Win Prob -->
+                <div class="prob-item">
+                    <div class="prob-meta">
+                        <span class="prob-label"><i class="fa-solid fa-circle" style="color: var(--accent-away); font-size: 0.75rem;"></i> Away Win Probability</span>
+                        <span id="prob-away-val" class="prob-value">0%</span>
+                    </div>
+                    <div class="prob-bar-bg">
+                        <div id="prob-away-bar" class="prob-bar-fill fill-away"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Comparison Panel -->
+        <div id="stats-card" class="glass-card stats-panel">
+            <div class="stats-header">
+                <i class="fa-solid fa-chart-simple"></i>
+                <span>Team Rolling History & Stats Comparison</span>
+            </div>
+            
+            <div class="stats-grid" id="stats-grid-container">
+                <!-- Row for ELO -->
+                <div class="stat-row">
+                    <div class="stat-val-home" id="stat-home-elo">1500</div>
+                    <div class="stat-name">ELO Rating</div>
+                    <div class="stat-val-away" id="stat-away-elo">1500</div>
+                    <div class="stat-bar-container">
+                        <div class="stat-bar-home" id="bar-home-elo" style="width: 50%"></div>
+                        <div class="stat-bar-away" id="bar-away-elo" style="width: 50%"></div>
+                    </div>
+                </div>
+
+                <!-- Row for Goals Scored -->
+                <div class="stat-row">
+                    <div class="stat-val-home" id="stat-home-goals">1.5</div>
+                    <div class="stat-name">Avg Goals Scored</div>
+                    <div class="stat-val-away" id="stat-away-goals">1.5</div>
+                    <div class="stat-bar-container">
+                        <div class="stat-bar-home" id="bar-home-goals" style="width: 50%"></div>
+                        <div class="stat-bar-away" id="bar-away-goals" style="width: 50%"></div>
+                    </div>
+                </div>
+
+                <!-- Row for Goals Conceded -->
+                <div class="stat-row">
+                    <div class="stat-val-home" id="stat-home-conceded">1.5</div>
+                    <div class="stat-name">Avg Goals Conceded</div>
+                    <div class="stat-val-away" id="stat-away-conceded">1.5</div>
+                    <div class="stat-bar-container">
+                        <div class="stat-bar-home" id="bar-home-conceded" style="width: 50%"></div>
+                        <div class="stat-bar-away" id="bar-away-conceded" style="width: 50%"></div>
+                    </div>
+                </div>
+
+                <!-- Row for Avg Points -->
+                <div class="stat-row">
+                    <div class="stat-val-home" id="stat-home-pts">1.5</div>
+                    <div class="stat-name">PPG (Last 5)</div>
+                    <div class="stat-val-away" id="stat-away-pts">1.5</div>
+                    <div class="stat-bar-container">
+                        <div class="stat-bar-home" id="bar-home-pts" style="width: 50%"></div>
+                        <div class="stat-bar-away" id="bar-away-pts" style="width: 50%"></div>
+                    </div>
+                </div>
+
+                <!-- Row for Total Season Points -->
+                <div class="stat-row">
+                    <div class="stat-val-home" id="stat-home-total-pts">0</div>
+                    <div class="stat-name">Total Season Points</div>
+                    <div class="stat-val-away" id="stat-away-total-pts">0</div>
+                    <div class="stat-bar-container">
+                        <div class="stat-bar-home" id="bar-home-total-pts" style="width: 50%"></div>
+                        <div class="stat-bar-away" id="bar-away-total-pts" style="width: 50%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Spinner Loader Overlay -->
+    <div id="loader" class="loader-overlay">
+        <div class="spinner"></div>
+        <div class="loader-text">Analyzing match dynamics...</div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Premier League Predictor App. Powered by FastAPI & Machine Learning.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const homeSelect = document.getElementById('home-team-select');
+            const awaySelect = document.getElementById('away-team-select');
+            const homeOdds = document.getElementById('home-odds');
+            const drawOdds = document.getElementById('draw-odds');
+            const awayOdds = document.getElementById('away-odds');
+            const predictBtn = document.getElementById('btn-predict-match');
+            
+            const loader = document.getElementById('loader');
+            const errorBanner = document.getElementById('error-banner');
+            const errorMsg = document.getElementById('error-msg');
+            
+            const resultsCard = document.getElementById('results-card');
+            const statsCard = document.getElementById('stats-card');
+            
+            // Populate team lists
+            const loadTeams = async () => {
+                showLoader("Loading team lists...");
+                try {
+                    const response = await fetch('/teams');
+                    if (!response.ok) throw new Error("Failed to load team database.");
+                    
+                    const teams = await response.json();
+                    
+                    // Clear previous options
+                    homeSelect.innerHTML = '<option value="" disabled selected>Choose Home Team</option>';
+                    awaySelect.innerHTML = '<option value="" disabled selected>Choose Away Team</option>';
+                    
+                    teams.forEach(team => {
+                        const optHome = document.createElement('option');
+                        optHome.value = team;
+                        optHome.textContent = team;
+                        homeSelect.appendChild(optHome);
+                        
+                        const optAway = document.createElement('option');
+                        optAway.value = team;
+                        optAway.textContent = team;
+                        awaySelect.appendChild(optAway);
+                    });
+                } catch (err) {
+                    showError("Error loading teams: " + err.message);
+                } finally {
+                    hideLoader();
+                }
+            };
+
+            // Event listener to prevent selecting same team
+            homeSelect.addEventListener('change', () => {
+                const homeVal = homeSelect.value;
+                Array.from(awaySelect.options).forEach(opt => {
+                    opt.disabled = opt.value === homeVal;
+                });
+            });
+
+            awaySelect.addEventListener('change', () => {
+                const awayVal = awaySelect.value;
+                Array.from(homeSelect.options).forEach(opt => {
+                    opt.disabled = opt.value === awayVal;
+                });
+            });
+
+            // Action handler
+            predictBtn.addEventListener('click', async () => {
+                hideError();
+                
+                const homeTeam = homeSelect.value;
+                const awayTeam = awaySelect.value;
+                const hOdds = parseFloat(homeOdds.value);
+                const dOdds = parseFloat(drawOdds.value);
+                const aOdds = parseFloat(awayOdds.value);
+
+                // Validation
+                if (!homeTeam || !awayTeam) {
+                    showError("Please select both Home and Away teams.");
+                    return;
+                }
+                if (isNaN(hOdds) || isNaN(dOdds) || isNaN(aOdds) || hOdds <= 1 || dOdds <= 1 || aOdds <= 1) {
+                    showError("Please enter valid decimal betting odds greater than 1.0.");
+                    return;
+                }
+
+                showLoader("Generating predictive simulation...");
+                resultsCard.style.display = "none";
+                statsCard.style.display = "none";
+
+                try {
+                    const payload = {
+                        home_team: homeTeam,
+                        away_team: awayTeam,
+                        b365h: hOdds,
+                        b365d: dOdds,
+                        b365a: aOdds
+                    };
+
+                    const response = await fetch('/predict', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errBody = await response.json();
+                        throw new Error(errBody.detail || "Prediction request failed.");
+                    }
+
+                    const data = await response.json();
+                    
+                    // Render Results
+                    renderResults(data);
+                    
+                } catch (err) {
+                    showError(err.message);
+                } finally {
+                    hideLoader();
+                }
+            });
+
+            // Helper to render prediction results
+            const renderResults = (data) => {
+                const resultText = document.getElementById('predicted-result');
+                const homeVal = document.getElementById('prob-home-val');
+                const drawVal = document.getElementById('prob-draw-val');
+                const awayVal = document.getElementById('prob-away-val');
+                
+                const homeBar = document.getElementById('prob-home-bar');
+                const drawBar = document.getElementById('prob-draw-bar');
+                const awayBar = document.getElementById('prob-away-bar');
+
+                // Winner Text Mapping
+                resultText.textContent = data.prediction.toUpperCase();
+                resultText.className = "winner-name"; // reset
+                if (data.prediction === "Home Win") {
+                    resultText.classList.add("home-win");
+                } else if (data.prediction === "Away Win") {
+                    resultText.classList.add("away-win");
+                }
+
+                const homeProb = data.probabilities["Home Win"];
+                const drawProb = data.probabilities["Draw"];
+                const awayProb = data.probabilities["Away Win"];
+
+                // Set Percentage Text
+                homeVal.textContent = homeProb + "%";
+                drawVal.textContent = drawProb + "%";
+                awayVal.textContent = awayProb + "%";
+
+                // Animation delay for bars
+                setTimeout(() => {
+                    homeBar.style.width = homeProb + "%";
+                    drawBar.style.width = drawProb + "%";
+                    awayBar.style.width = awayProb + "%";
+                }, 100);
+
+                // Populate Stats Comparison
+                const stats = data.stats;
+                
+                document.getElementById('stat-home-elo').textContent = stats.home.ELO;
+                document.getElementById('stat-away-elo').textContent = stats.away.ELO;
+                adjustBarRatio('bar-home-elo', 'bar-away-elo', stats.home.ELO, stats.away.ELO);
+
+                document.getElementById('stat-home-goals').textContent = stats.home.RollingGoalsScored;
+                document.getElementById('stat-away-goals').textContent = stats.away.RollingGoalsScored;
+                adjustBarRatio('bar-home-goals', 'bar-away-goals', stats.home.RollingGoalsScored, stats.away.RollingGoalsScored);
+
+                document.getElementById('stat-home-conceded').textContent = stats.home.RollingGoalsConceeded;
+                document.getElementById('stat-away-conceded').textContent = stats.away.RollingGoalsConceeded;
+                adjustBarRatio('bar-home-conceded', 'bar-away-conceded', stats.home.RollingGoalsConceeded, stats.away.RollingGoalsConceeded, true); // inverted for conceeded (less is better)
+
+                document.getElementById('stat-home-pts').textContent = stats.home.RollingPoints;
+                document.getElementById('stat-away-pts').textContent = stats.away.RollingPoints;
+                adjustBarRatio('bar-home-pts', 'bar-away-pts', stats.home.RollingPoints, stats.away.RollingPoints);
+
+                document.getElementById('stat-home-total-pts').textContent = stats.home.TotalPoints;
+                document.getElementById('stat-away-total-pts').textContent = stats.away.TotalPoints;
+                adjustBarRatio('bar-home-total-pts', 'bar-away-total-pts', stats.home.TotalPoints, stats.away.TotalPoints);
+
+                // Show Cards
+                resultsCard.style.display = "flex";
+                statsCard.style.display = "flex";
+                
+                // Scroll down to see results on small devices
+                window.scrollTo({
+                    top: resultsCard.offsetTop - 50,
+                    behavior: 'smooth'
+                });
+            };
+
+            // Custom stats visual bar ratio allocator
+            const adjustBarRatio = (homeId, awayId, homeVal, awayVal, invertColors = false) => {
+                const homeBar = document.getElementById(homeId);
+                const awayBar = document.getElementById(awayId);
+                
+                const total = homeVal + awayVal;
+                let homePercent = 50;
+                let awayPercent = 50;
+
+                if (total > 0) {
+                    homePercent = (homeVal / total) * 100;
+                    awayPercent = (awayVal / total) * 100;
+                }
+
+                homeBar.style.width = homePercent + "%";
+                awayBar.style.width = awayPercent + "%";
+
+                if (invertColors) {
+                    homeBar.style.backgroundColor = homeVal < awayVal ? "var(--accent-draw)" : "var(--accent-away)";
+                    awayBar.style.backgroundColor = awayVal < homeVal ? "var(--accent-draw)" : "var(--accent-away)";
+                } else {
+                    homeBar.style.backgroundColor = "var(--accent-home)";
+                    awayBar.style.backgroundColor = "var(--accent-away)";
+                }
+            };
+
+            // Loading state helpers
+            const showLoader = (text) => {
+                document.querySelector('.loader-text').textContent = text;
+                loader.style.display = 'flex';
+            };
+
+            const hideLoader = () => {
+                loader.style.display = 'none';
+            };
+
+            // Error message banner helpers
+            const showError = (text) => {
+                errorMsg.textContent = text;
+                errorBanner.style.display = 'flex';
+            };
+
+            const hideError = () => {
+                errorBanner.style.display = 'none';
+            };
+
+            // Load initial teams lists
+            loadTeams();
+        });
+    </script>
+</body>
+</html>

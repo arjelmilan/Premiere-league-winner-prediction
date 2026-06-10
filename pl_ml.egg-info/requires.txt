@@ -1,0 +1,13 @@
+setuptools
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
+lightgbm
+xgboost
+catboost
+flask
+fastapi
+uvicorn
+requests
